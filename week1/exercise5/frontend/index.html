@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>EASY-CHATGPT</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="app">
+        <header>
+            <h1>EASY-CHATGPT</h1>
+            <p>A small chatbot server with FastAPI, Ollama and a context view.</p>
+        </header>
+
+        <main>
+            <section class="chat-panel">
+                <div id="chat" class="chat"></div>
+
+                <form id="chat-form" class="chat-form">
+                    <textarea id="message" placeholder="Write your message..." rows="3"></textarea>
+                    <div class="buttons">
+                        <button type="submit">Send</button>
+                        <button type="button" id="reset">Reset</button>
+                    </div>
+                </form>
+            </section>
+
+            <aside class="context-panel">
+                <h2>Context view</h2>
+                <p class="small">Messages sent to the model and token usage.</p>
+
+                <h3>Model</h3>
+                <pre id="model">-</pre>
+
+                <h3>Token usage</h3>
+                <pre id="usage">No request yet.</pre>
+
+                <h3>Messages sent to model</h3>
+                <pre id="context">No context yet.</pre>
+            </aside>
+        </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
