@@ -1,0 +1,8 @@
+services:
+  easy-chatgpt:
+    build: .
+    container_name: easy-chatgpt
+    ports:
+      - "6661:6661"
+    env_file:
+      - .env
