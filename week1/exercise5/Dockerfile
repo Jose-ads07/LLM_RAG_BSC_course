@@ -11,4 +11,4 @@ COPY frontend /app/frontend
 
 EXPOSE 6661
 
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "6661"]
+CMD sh -c "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-6661}"
