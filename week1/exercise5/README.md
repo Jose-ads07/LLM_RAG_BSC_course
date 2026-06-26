@@ -36,8 +36,8 @@ Features implemented
 * Reset conversation button.
 * Configuration through .env.
 * Docker support with docker compose up.
-
-This is the baseline version of the exercise. It does not implement streaming yet, so the model answer appears when the full response is ready.
+* Streaming responses through /chat/stream.
+This version implements both the baseline non-streaming route and a streaming route. The frontend uses the streaming route, so the assistant answer appears progressively while the model generates it.
 
 Project structure
 
