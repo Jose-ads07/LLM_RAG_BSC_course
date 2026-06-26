@@ -6,3 +6,5 @@ services:
       - "${PORT:-6661}:${PORT:-6661}"
     env_file:
       - .env
+    volumes:
+      - ./data:/app/data

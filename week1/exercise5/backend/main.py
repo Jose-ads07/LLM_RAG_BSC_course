@@ -10,6 +10,8 @@ from fastapi.staticfiles import StaticFiles
 from openai import OpenAI
 from pydantic import BaseModel
 
+from backend.database import clear_messages, init_database, load_messages, save_message
+
 
 load_dotenv()
 
@@ -24,6 +26,8 @@ client = OpenAI(
 
 app = FastAPI(title="EASY-CHATGPT")
 
+init_database()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -32,7 +36,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-conversation: List[Dict[str, str]] = []
+conversation: List[Dict[str, str]] = load_messages()
+
 last_usage: Dict[str, Any] = {
     "prompt_tokens": None,
     "completion_tokens": None,
@@ -61,6 +66,7 @@ def chat(request: ChatRequest) -> Dict[str, Any]:
         "role": "user",
         "content": user_message
     })
+    save_message("user", user_message)
 
     response = client.chat.completions.create(
         model=MODEL,
@@ -74,6 +80,7 @@ def chat(request: ChatRequest) -> Dict[str, Any]:
         "role": "assistant",
         "content": assistant_message
     })
+    save_message("assistant", assistant_message)
 
     usage = response.usage
 
@@ -106,6 +113,7 @@ def chat_stream(request: ChatRequest):
         "role": "user",
         "content": user_message
     })
+    save_message("user", user_message)
 
     def event_generator():
         assistant_parts: List[str] = []
@@ -134,6 +142,7 @@ def chat_stream(request: ChatRequest):
                 "role": "assistant",
                 "content": assistant_message
             })
+            save_message("assistant", assistant_message)
 
             final_payload = {
                 "model": MODEL,
@@ -173,6 +182,7 @@ def state():
 @app.post("/reset")
 def reset():
     conversation.clear()
+    clear_messages()
 
     global last_usage
     last_usage = {
