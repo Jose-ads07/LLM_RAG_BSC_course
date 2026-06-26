@@ -210,13 +210,19 @@ form.addEventListener("submit", async function (event) {
 });
 
 resetButton.addEventListener("click", async function () {
-    await fetch("/reset", { method: "POST" });
+    const response = await fetch("/conversations/new", {
+        method: "POST"
+    });
+
+    if (!response.ok) {
+        alert("Could not create a new chat.");
+        return;
+    }
+
+    const data = await response.json();
 
     showEmptyState();
-
-    modelBox.textContent = "-";
-    usageBox.textContent = "No request yet.";
-    contextBox.textContent = "No context yet.";
+    updateContext(data);
 });
 
 loadSavedState();

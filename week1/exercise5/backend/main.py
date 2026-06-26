@@ -10,7 +10,14 @@ from fastapi.staticfiles import StaticFiles
 from openai import OpenAI
 from pydantic import BaseModel
 
-from backend.database import clear_messages, init_database, load_messages, save_message
+from backend.database import (
+    create_conversation,
+    get_or_create_latest_conversation_id,
+    init_database,
+    list_conversations,
+    load_messages,
+    save_message,
+)
 
 
 load_dotenv()
@@ -36,7 +43,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-conversation: List[Dict[str, str]] = load_messages()
+active_conversation_id: int = get_or_create_latest_conversation_id()
+conversation: List[Dict[str, str]] = load_messages(active_conversation_id)
 
 last_usage: Dict[str, Any] = {
     "prompt_tokens": None,
@@ -54,6 +62,50 @@ def home():
     return FileResponse("frontend/index.html")
 
 
+@app.get("/state")
+def state():
+    """
+    Returns the current backend state.
+    The frontend uses this when the page loads.
+    """
+    return {
+        "model": MODEL,
+        "active_conversation_id": active_conversation_id,
+        "conversations": list_conversations(),
+        "messages_sent_to_model": conversation,
+        "usage": last_usage,
+    }
+
+
+@app.post("/conversations/new")
+def new_conversation():
+    """
+    Creates a new empty conversation.
+    Old conversations remain stored in SQLite.
+    """
+    global active_conversation_id
+    global conversation
+    global last_usage
+
+    active_conversation_id = create_conversation()
+    conversation = []
+
+    last_usage = {
+        "prompt_tokens": None,
+        "completion_tokens": None,
+        "total_tokens": None,
+    }
+
+    return {
+        "status": "new conversation created",
+        "model": MODEL,
+        "active_conversation_id": active_conversation_id,
+        "conversations": list_conversations(),
+        "messages_sent_to_model": conversation,
+        "usage": last_usage,
+    }
+
+
 @app.post("/chat")
 def chat(request: ChatRequest) -> Dict[str, Any]:
     """
@@ -66,7 +118,7 @@ def chat(request: ChatRequest) -> Dict[str, Any]:
         "role": "user",
         "content": user_message
     })
-    save_message("user", user_message)
+    save_message(active_conversation_id, "user", user_message)
 
     response = client.chat.completions.create(
         model=MODEL,
@@ -80,7 +132,7 @@ def chat(request: ChatRequest) -> Dict[str, Any]:
         "role": "assistant",
         "content": assistant_message
     })
-    save_message("assistant", assistant_message)
+    save_message(active_conversation_id, "assistant", assistant_message)
 
     usage = response.usage
 
@@ -96,6 +148,8 @@ def chat(request: ChatRequest) -> Dict[str, Any]:
         "messages_sent_to_model": conversation,
         "usage": last_usage,
         "model": MODEL,
+        "active_conversation_id": active_conversation_id,
+        "conversations": list_conversations(),
         "mode": "baseline",
     }
 
@@ -113,7 +167,7 @@ def chat_stream(request: ChatRequest):
         "role": "user",
         "content": user_message
     })
-    save_message("user", user_message)
+    save_message(active_conversation_id, "user", user_message)
 
     def event_generator():
         assistant_parts: List[str] = []
@@ -142,10 +196,12 @@ def chat_stream(request: ChatRequest):
                 "role": "assistant",
                 "content": assistant_message
             })
-            save_message("assistant", assistant_message)
+            save_message(active_conversation_id, "assistant", assistant_message)
 
             final_payload = {
                 "model": MODEL,
+                "active_conversation_id": active_conversation_id,
+                "conversations": list_conversations(),
                 "messages_sent_to_model": conversation,
                 "usage": {
                     "prompt_tokens": None,
@@ -166,32 +222,14 @@ def chat_stream(request: ChatRequest):
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
-@app.get("/state")
-def state():
-    """
-    Returns the current backend state.
-    Useful for debugging the context view.
-    """
-    return {
-        "model": MODEL,
-        "messages_sent_to_model": conversation,
-        "usage": last_usage,
-    }
-
-
 @app.post("/reset")
 def reset():
-    conversation.clear()
-    clear_messages()
+    """
+    Deprecated behaviour.
 
-    global last_usage
-    last_usage = {
-        "prompt_tokens": None,
-        "completion_tokens": None,
-        "total_tokens": None,
-    }
-
-    return {"status": "conversation cleared"}
+    For compatibility, this now creates a new chat instead of deleting all stored messages.
+    """
+    return new_conversation()
 
 
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
