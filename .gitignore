@@ -1,1 +1,5 @@
-.DS_Store
+# Local SQLite database for exercise 5
+week1/exercise5/data/*.db
+week1/exercise5/data/*.db-journal
+week1/exercise5/data/*.db-wal
+week1/exercise5/data/*.db-shm
