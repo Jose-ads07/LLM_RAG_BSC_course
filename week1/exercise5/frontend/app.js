@@ -19,11 +19,15 @@ function renderMarkdown(text) {
         .replaceAll("\n", "<br>");
 }
 
-function addMessage(role, content) {
+function clearEmptyState() {
     const emptyState = document.querySelector(".empty-state");
     if (emptyState) {
         emptyState.remove();
     }
+}
+
+function addMessage(role, content) {
+    clearEmptyState();
 
     const div = document.createElement("div");
     div.className = "message " + role;
@@ -49,10 +53,57 @@ function addMessage(role, content) {
     return contentDiv;
 }
 
+function showEmptyState() {
+    chat.innerHTML = "";
+
+    const emptyState = document.createElement("div");
+    emptyState.className = "empty-state";
+    emptyState.innerHTML = `
+        <h3>Start a conversation</h3>
+        <p>The assistant answer will appear here. The right panel shows the context and token usage.</p>
+    `;
+
+    chat.appendChild(emptyState);
+}
+
 function updateContext(data) {
     modelBox.textContent = data.model || "-";
     usageBox.textContent = JSON.stringify(data.usage, null, 2);
     contextBox.textContent = JSON.stringify(data.messages_sent_to_model, null, 2);
+}
+
+function renderSavedMessages(messages) {
+    chat.innerHTML = "";
+
+    if (!messages || messages.length === 0) {
+        showEmptyState();
+        return;
+    }
+
+    for (const message of messages) {
+        addMessage(message.role, message.content);
+    }
+
+    chat.scrollTop = chat.scrollHeight;
+}
+
+async function loadSavedState() {
+    try {
+        const response = await fetch("/state");
+
+        if (!response.ok) {
+            throw new Error("Backend returned " + response.status);
+        }
+
+        const data = await response.json();
+
+        renderSavedMessages(data.messages_sent_to_model);
+        updateContext(data);
+
+    } catch (error) {
+        console.error("Could not load saved state:", error);
+        showEmptyState();
+    }
 }
 
 function parseSSEBlock(block) {
@@ -161,18 +212,11 @@ form.addEventListener("submit", async function (event) {
 resetButton.addEventListener("click", async function () {
     await fetch("/reset", { method: "POST" });
 
-    chat.innerHTML = "";
-
-    const emptyState = document.createElement("div");
-    emptyState.className = "empty-state";
-    emptyState.innerHTML = `
-        <h3>Start a conversation</h3>
-        <p>The assistant answer will appear here. The right panel shows the context and token usage.</p>
-    `;
-
-    chat.appendChild(emptyState);
+    showEmptyState();
 
     modelBox.textContent = "-";
     usageBox.textContent = "No request yet.";
     contextBox.textContent = "No context yet.";
 });
+
+loadSavedState();
