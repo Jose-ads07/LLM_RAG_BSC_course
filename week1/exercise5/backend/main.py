@@ -1,10 +1,11 @@
+import json
 import os
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from openai import OpenAI
 from pydantic import BaseModel
@@ -32,6 +33,11 @@ app.add_middleware(
 )
 
 conversation: List[Dict[str, str]] = []
+last_usage: Dict[str, Any] = {
+    "prompt_tokens": None,
+    "completion_tokens": None,
+    "total_tokens": None,
+}
 
 
 class ChatRequest(BaseModel):
@@ -45,6 +51,10 @@ def home():
 
 @app.post("/chat")
 def chat(request: ChatRequest) -> Dict[str, Any]:
+    """
+    Baseline non-streaming route.
+    It is kept so the original version still exists.
+    """
     user_message = request.message
 
     conversation.append({
@@ -67,21 +77,110 @@ def chat(request: ChatRequest) -> Dict[str, Any]:
 
     usage = response.usage
 
+    global last_usage
+    last_usage = {
+        "prompt_tokens": usage.prompt_tokens if usage else None,
+        "completion_tokens": usage.completion_tokens if usage else None,
+        "total_tokens": usage.total_tokens if usage else None,
+    }
+
     return {
         "answer": assistant_message,
         "messages_sent_to_model": conversation,
-        "usage": {
-            "prompt_tokens": usage.prompt_tokens if usage else None,
-            "completion_tokens": usage.completion_tokens if usage else None,
-            "total_tokens": usage.total_tokens if usage else None,
-        },
+        "usage": last_usage,
         "model": MODEL,
+        "mode": "baseline",
+    }
+
+
+@app.post("/chat/stream")
+def chat_stream(request: ChatRequest):
+    """
+    Streaming route.
+    It sends small chunks of the answer as they arrive from the model.
+    The frontend reads these chunks and updates the assistant message live.
+    """
+    user_message = request.message
+
+    conversation.append({
+        "role": "user",
+        "content": user_message
+    })
+
+    def event_generator():
+        assistant_parts: List[str] = []
+
+        try:
+            stream = client.chat.completions.create(
+                model=MODEL,
+                messages=conversation,
+                temperature=0.7,
+                stream=True,
+            )
+
+            for chunk in stream:
+                delta = chunk.choices[0].delta
+                token = delta.content if delta and delta.content else ""
+
+                if token:
+                    assistant_parts.append(token)
+
+                    yield "event: token\n"
+                    yield f"data: {json.dumps({'token': token})}\n\n"
+
+            assistant_message = "".join(assistant_parts)
+
+            conversation.append({
+                "role": "assistant",
+                "content": assistant_message
+            })
+
+            final_payload = {
+                "model": MODEL,
+                "messages_sent_to_model": conversation,
+                "usage": {
+                    "prompt_tokens": None,
+                    "completion_tokens": None,
+                    "total_tokens": None,
+                    "note": "Token usage is not available in this streaming response."
+                },
+                "mode": "streaming",
+            }
+
+            yield "event: done\n"
+            yield f"data: {json.dumps(final_payload)}\n\n"
+
+        except Exception as error:
+            yield "event: error\n"
+            yield f"data: {json.dumps({'error': str(error)})}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+@app.get("/state")
+def state():
+    """
+    Returns the current backend state.
+    Useful for debugging the context view.
+    """
+    return {
+        "model": MODEL,
+        "messages_sent_to_model": conversation,
+        "usage": last_usage,
     }
 
 
 @app.post("/reset")
 def reset():
     conversation.clear()
+
+    global last_usage
+    last_usage = {
+        "prompt_tokens": None,
+        "completion_tokens": None,
+        "total_tokens": None,
+    }
+
     return {"status": "conversation cleared"}
 
 
