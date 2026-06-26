@@ -3,3 +3,5 @@ week1/exercise5/data/*.db
 week1/exercise5/data/*.db-journal
 week1/exercise5/data/*.db-wal
 week1/exercise5/data/*.db-shm
+.DS_Store
+**/.DS_Store
