@@ -8,6 +8,11 @@ const usageBox = document.getElementById("usage");
 const contextBox = document.getElementById("context");
 
 function addMessage(role, content) {
+    const emptyState = document.querySelector(".empty-state");
+    if (emptyState) {
+        emptyState.remove();
+    }
+
     const div = document.createElement("div");
     div.className = `message ${role}`;
 

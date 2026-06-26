@@ -3,41 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <title>EASY-CHATGPT</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="/static/style.css?v=2">
+    <script src="/static/app.js?v=2"></script>
 </head>
 <body>
     <div class="app">
-        <header>
-            <h1>EASY-CHATGPT</h1>
-            <p>A small chatbot server with FastAPI, Ollama and a context view.</p>
+        <header class="topbar">
+            <div>
+                <h1>EASY-CHATGPT</h1>
+                <p>FastAPI + Ollama chatbot with context inspection</p>
+            </div>
+            <div class="status-pill">
+                <span class="dot"></span>
+                <span>Baseline mode</span>
+            </div>
         </header>
 
-        <main>
+        <main class="layout">
             <section class="chat-panel">
-                <div id="chat" class="chat"></div>
+                <div class="panel-header">
+                    <div>
+                        <h2>Chat</h2>
+                        <p>Ask the model something and inspect what is sent behind the scenes.</p>
+                    </div>
+                </div>
+
+                <div id="chat" class="chat">
+                    <div class="empty-state">
+                        <h3>Start a conversation</h3>
+                        <p>The assistant answer will appear here. The right panel shows the context and token usage.</p>
+                    </div>
+                </div>
 
                 <form id="chat-form" class="chat-form">
                     <textarea id="message" placeholder="Write your message..." rows="3"></textarea>
                     <div class="buttons">
-                        <button type="submit">Send</button>
+                        <button type="submit" id="send">Send</button>
                         <button type="button" id="reset">Reset</button>
                     </div>
                 </form>
             </section>
 
             <aside class="context-panel">
-                <h2>Context view</h2>
-                <p class="small">Messages sent to the model and token usage.</p>
+                <div class="panel-header">
+                    <div>
+                        <h2>Context view</h2>
+                        <p>What the backend sends to the model.</p>
+                    </div>
+                </div>
 
-                <h3>Model</h3>
-                <pre id="model">-</pre>
+                <div class="context-card">
+                    <h3>Model</h3>
+                    <pre id="model">-</pre>
+                </div>
 
-                <h3>Token usage</h3>
-                <pre id="usage">No request yet.</pre>
+                <div class="context-card">
+                    <h3>Token usage</h3>
+                    <pre id="usage">No request yet.</pre>
+                </div>
 
-                <h3>Messages sent to model</h3>
-                <pre id="context">No context yet.</pre>
+                <div class="context-card">
+                    <h3>Messages sent to model</h3>
+                    <pre id="context">No context yet.</pre>
+                </div>
             </aside>
         </main>
     </div>
