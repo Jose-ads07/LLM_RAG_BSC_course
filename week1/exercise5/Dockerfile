@@ -8,6 +8,7 @@ RUN pip install --no-cache-dir -r /app/backend/requirements.txt
 
 COPY backend /app/backend
 COPY frontend /app/frontend
+COPY rag_files /app/rag_files
 
 EXPOSE 6661
 

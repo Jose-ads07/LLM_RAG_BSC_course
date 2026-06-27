@@ -113,7 +113,7 @@ async function selectConversation(conversationId) {
 
         const data = await response.json();
 
-        renderSavedMessages(data.messages_sent_to_model);
+        renderSavedMessages(data.chat_history || data.messages_sent_to_model);
         updateContext(data);
 
     } catch (error) {
@@ -147,7 +147,7 @@ async function loadSavedState() {
 
         const data = await response.json();
 
-        renderSavedMessages(data.messages_sent_to_model);
+        renderSavedMessages(data.chat_history || data.messages_sent_to_model);
         updateContext(data);
 
     } catch (error) {

@@ -19,6 +19,7 @@ from backend.database import (
     save_message,
     update_conversation_title,
 )
+from backend.rag import build_messages_with_rag
 
 
 load_dotenv()
@@ -32,7 +33,7 @@ client = OpenAI(
     api_key=OPENAI_API_KEY,
 )
 
-app = FastAPI(title="EASY-CHATGPT")
+app = FastAPI(title="JaiChat")
 
 init_database()
 
@@ -73,6 +74,30 @@ def make_title_from_message(message: str) -> str:
     return title
 
 
+def build_state_response(
+    messages_sent_to_model: List[Dict[str, str]] | None = None,
+    rag_context: str = "",
+) -> Dict[str, Any]:
+    """
+    Builds the state returned to the frontend.
+
+    chat_history is the visible conversation.
+    messages_sent_to_model is the real call sent to the LLM.
+    """
+    if messages_sent_to_model is None:
+        messages_sent_to_model, rag_context = build_messages_with_rag(conversation)
+
+    return {
+        "model": MODEL,
+        "active_conversation_id": active_conversation_id,
+        "conversations": list_conversations(),
+        "chat_history": conversation,
+        "messages_sent_to_model": messages_sent_to_model,
+        "rag_context": rag_context,
+        "usage": last_usage,
+    }
+
+
 @app.get("/")
 def home():
     return FileResponse("frontend/index.html")
@@ -84,13 +109,7 @@ def state():
     Returns the current backend state.
     The frontend uses this when the page loads.
     """
-    return {
-        "model": MODEL,
-        "active_conversation_id": active_conversation_id,
-        "conversations": list_conversations(),
-        "messages_sent_to_model": conversation,
-        "usage": last_usage,
-    }
+    return build_state_response()
 
 
 @app.post("/conversations/new")
@@ -112,14 +131,7 @@ def new_conversation():
         "total_tokens": None,
     }
 
-    return {
-        "status": "new conversation created",
-        "model": MODEL,
-        "active_conversation_id": active_conversation_id,
-        "conversations": list_conversations(),
-        "messages_sent_to_model": conversation,
-        "usage": last_usage,
-    }
+    return build_state_response()
 
 
 @app.post("/conversations/{conversation_id}/select")
@@ -140,14 +152,7 @@ def select_conversation(conversation_id: int):
         "total_tokens": None,
     }
 
-    return {
-        "status": "conversation selected",
-        "model": MODEL,
-        "active_conversation_id": active_conversation_id,
-        "conversations": list_conversations(),
-        "messages_sent_to_model": conversation,
-        "usage": last_usage,
-    }
+    return build_state_response()
 
 
 @app.post("/chat")
@@ -173,9 +178,11 @@ def chat(request: ChatRequest) -> Dict[str, Any]:
             make_title_from_message(user_message)
         )
 
+    messages_sent_to_model, rag_context = build_messages_with_rag(conversation)
+
     response = client.chat.completions.create(
         model=MODEL,
-        messages=conversation,
+        messages=messages_sent_to_model,
         temperature=0.7,
     )
 
@@ -195,23 +202,18 @@ def chat(request: ChatRequest) -> Dict[str, Any]:
         "total_tokens": usage.total_tokens if usage else None,
     }
 
-    return {
-        "answer": assistant_message,
-        "messages_sent_to_model": conversation,
-        "usage": last_usage,
-        "model": MODEL,
-        "active_conversation_id": active_conversation_id,
-        "conversations": list_conversations(),
-        "mode": "baseline",
-    }
+    state_data = build_state_response(messages_sent_to_model, rag_context)
+    state_data["answer"] = assistant_message
+    state_data["mode"] = "baseline-rag"
+
+    return state_data
 
 
 @app.post("/chat/stream")
 def chat_stream(request: ChatRequest):
     """
-    Streaming route.
-    It sends small chunks of the answer as they arrive from the model.
-    The frontend reads these chunks and updates the assistant message live.
+    Streaming route with simple single-file RAG.
+    It sends the RAG-augmented messages to the model, but only stores the visible chat.
     """
     user_message = request.message
     is_first_message = len(conversation) == 0
@@ -228,13 +230,15 @@ def chat_stream(request: ChatRequest):
             make_title_from_message(user_message)
         )
 
+    messages_sent_to_model, rag_context = build_messages_with_rag(conversation)
+
     def event_generator():
         assistant_parts: List[str] = []
 
         try:
             stream = client.chat.completions.create(
                 model=MODEL,
-                messages=conversation,
+                messages=messages_sent_to_model,
                 temperature=0.7,
                 stream=True,
             )
@@ -257,19 +261,14 @@ def chat_stream(request: ChatRequest):
             })
             save_message(active_conversation_id, "assistant", assistant_message)
 
-            final_payload = {
-                "model": MODEL,
-                "active_conversation_id": active_conversation_id,
-                "conversations": list_conversations(),
-                "messages_sent_to_model": conversation,
-                "usage": {
-                    "prompt_tokens": None,
-                    "completion_tokens": None,
-                    "total_tokens": None,
-                    "note": "Token usage is not available in this streaming response."
-                },
-                "mode": "streaming",
+            final_payload = build_state_response(messages_sent_to_model, rag_context)
+            final_payload["usage"] = {
+                "prompt_tokens": None,
+                "completion_tokens": None,
+                "total_tokens": None,
+                "note": "Token usage is not available in this streaming response."
             }
+            final_payload["mode"] = "streaming-rag"
 
             yield "event: done\n"
             yield f"data: {json.dumps(final_payload)}\n\n"
