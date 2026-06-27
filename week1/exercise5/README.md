@@ -1,6 +1,6 @@
-# EASY-CHATGPT
+# JaiChat
 
-EASY-CHATGPT is a small chatbot web application built with FastAPI, vanilla HTML/CSS/JavaScript, Ollama and an OpenAI-compatible API.
+JaiChat is a small chatbot web application built with FastAPI, vanilla HTML/CSS/JavaScript, Ollama and an OpenAI-compatible API.
 
 The project started as a baseline chatbot, but it now includes streaming responses, SQLite message storage, persistent conversations, a New chat system and previous chat selection.
 

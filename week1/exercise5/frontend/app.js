@@ -35,7 +35,7 @@ function addMessage(role, content) {
 
     const roleDiv = document.createElement("div");
     roleDiv.className = "role";
-    roleDiv.textContent = role === "user" ? "You" : "Assistant";
+    roleDiv.textContent = role === "user" ? "You" : "Jai";
 
     const contentDiv = document.createElement("div");
     contentDiv.className = "content";
