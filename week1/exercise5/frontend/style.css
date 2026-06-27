@@ -14,7 +14,7 @@ body {
 }
 
 .app {
-    max-width: 1250px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 24px;
 }
@@ -45,29 +45,30 @@ body {
 }
 
 .status-pill {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
-    border-radius: 999px;
     background: #ecfdf5;
     color: #047857;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-weight: 800;
     font-size: 14px;
-    font-weight: 700;
     white-space: nowrap;
 }
 
 .dot {
-    width: 9px;
-    height: 9px;
+    width: 8px;
+    height: 8px;
     border-radius: 999px;
     background: #10b981;
 }
 
-.layout {
+main {
     display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(360px, 1fr);
+    grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
     gap: 20px;
+    align-items: start;
 }
 
 .chat-panel,
@@ -79,23 +80,14 @@ body {
     box-shadow: 0 22px 55px rgba(0, 0, 0, 0.25);
 }
 
-.panel-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 12px;
-    margin-bottom: 14px;
+.chat-panel h2,
+.context-panel h2 {
+    margin-top: 0;
 }
 
-.panel-header h2 {
-    margin: 0;
-    font-size: 20px;
-}
-
-.panel-header p {
-    margin: 5px 0 0;
+.small {
     color: #64748b;
-    font-size: 14px;
+    margin-top: -4px;
 }
 
 .chat {
@@ -110,29 +102,24 @@ body {
 
 .empty-state {
     height: 100%;
-    display: grid;
-    place-content: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     text-align: center;
-    color: #64748b;
+    color: #475569;
 }
 
 .empty-state h3 {
     margin: 0 0 8px;
-    color: #334155;
-}
-
-.empty-state p {
-    margin: 0 auto;
-    max-width: 420px;
+    color: #1e293b;
 }
 
 .message {
-    margin-bottom: 14px;
+    margin-bottom: 16px;
     padding: 12px 14px;
     border-radius: 16px;
     max-width: 88%;
     line-height: 1.45;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
 }
 
 .user {
@@ -152,22 +139,19 @@ body {
 
 .role {
     font-size: 12px;
-    font-weight: 800;
-    margin-bottom: 5px;
-    opacity: 0.75;
+    font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 0.04em;
+    opacity: 0.8;
+    margin-bottom: 6px;
 }
 
-.assistant pre {
-    background: #0f172a;
-    color: #e5e7eb;
-    overflow-x: auto;
+.content p {
+    margin-top: 0;
 }
 
-.chat-form {
-    display: grid;
-    gap: 10px;
+.content p:last-child {
+    margin-bottom: 0;
 }
 
 .chat-form textarea {
@@ -178,7 +162,7 @@ body {
     border-radius: 14px;
     border: 1px solid #cbd5e1;
     outline: none;
-    background: white;
+    font-family: inherit;
 }
 
 .chat-form textarea:focus {
@@ -189,6 +173,7 @@ body {
 .buttons {
     display: flex;
     gap: 10px;
+    margin-top: 10px;
 }
 
 button {
@@ -209,52 +194,67 @@ button#reset {
     background: #64748b;
 }
 
-button:hover {
-    opacity: 0.92;
-}
-
 .context-panel {
-    height: 690px;
+    max-height: 720px;
     overflow-y: auto;
 }
 
-.context-card {
-    margin-bottom: 14px;
-}
-
-.context-card h3 {
-    margin: 0 0 8px;
-    font-size: 15px;
-    color: #334155;
+.context-panel h3 {
+    margin-bottom: 8px;
 }
 
 pre {
     white-space: pre-wrap;
     word-break: break-word;
     background: #f1f5f9;
-    padding: 12px;
+    border: 1px solid #e2e8f0;
+    padding: 11px;
     border-radius: 12px;
     font-size: 13px;
-    border: 1px solid #e2e8f0;
+    overflow-x: auto;
 }
 
-code {
-    background: #e2e8f0;
-    padding: 2px 5px;
-    border-radius: 5px;
+.conversation-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.conversation-button {
+    width: 100%;
+    text-align: left;
+    padding: 9px 11px;
+    border-radius: 10px;
+    border: 1px solid #dbeafe;
+    background: #f8fafc;
+    color: #111827;
+    font-size: 13px;
+    cursor: pointer;
+    box-shadow: none;
+}
+
+.conversation-button:hover {
+    background: #eef2ff;
+}
+
+.conversation-button.active {
+    background: #dbeafe;
+    border-color: #2563eb;
+    font-weight: 900;
 }
 
 @media (max-width: 900px) {
+    main {
+        grid-template-columns: 1fr;
+    }
+
     .topbar {
         flex-direction: column;
         align-items: flex-start;
     }
 
-    .layout {
-        grid-template-columns: 1fr;
-    }
-
     .context-panel {
-        height: auto;
+        max-height: none;
     }
 }

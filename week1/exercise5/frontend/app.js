@@ -6,6 +6,7 @@ const resetButton = document.getElementById("reset");
 const modelBox = document.getElementById("model");
 const usageBox = document.getElementById("usage");
 const contextBox = document.getElementById("context");
+const conversationListBox = document.getElementById("conversation-list");
 
 function renderMarkdown(text) {
     if (window.marked && window.marked.parse) {
@@ -70,6 +71,55 @@ function updateContext(data) {
     modelBox.textContent = data.model || "-";
     usageBox.textContent = JSON.stringify(data.usage, null, 2);
     contextBox.textContent = JSON.stringify(data.messages_sent_to_model, null, 2);
+    renderConversationList(data.conversations || [], data.active_conversation_id);
+}
+
+function renderConversationList(conversations, activeConversationId) {
+    conversationListBox.innerHTML = "";
+
+    if (!conversations || conversations.length === 0) {
+        conversationListBox.textContent = "No previous chats yet.";
+        return;
+    }
+
+    for (const conversation of conversations) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "conversation-button";
+
+        if (conversation.id === activeConversationId) {
+            button.className += " active";
+        }
+
+        button.textContent = `${conversation.title} #${conversation.id}`;
+
+        button.addEventListener("click", async function () {
+            await selectConversation(conversation.id);
+        });
+
+        conversationListBox.appendChild(button);
+    }
+}
+
+async function selectConversation(conversationId) {
+    try {
+        const response = await fetch(`/conversations/${conversationId}/select`, {
+            method: "POST"
+        });
+
+        if (!response.ok) {
+            throw new Error("Backend returned " + response.status);
+        }
+
+        const data = await response.json();
+
+        renderSavedMessages(data.messages_sent_to_model);
+        updateContext(data);
+
+    } catch (error) {
+        console.error("Could not select conversation:", error);
+        alert("Could not load the selected chat.");
+    }
 }
 
 function renderSavedMessages(messages) {

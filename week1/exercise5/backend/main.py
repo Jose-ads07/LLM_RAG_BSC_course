@@ -77,18 +77,17 @@ def state():
     }
 
 
-@app.post("/conversations/new")
-def new_conversation():
+@app.post("/conversations/{conversation_id}/select")
+def select_conversation(conversation_id: int):
     """
-    Creates a new empty conversation.
-    Old conversations remain stored in SQLite.
+    Selects an existing conversation and loads its messages.
     """
     global active_conversation_id
     global conversation
     global last_usage
 
-    active_conversation_id = create_conversation()
-    conversation = []
+    active_conversation_id = conversation_id
+    conversation = load_messages(active_conversation_id)
 
     last_usage = {
         "prompt_tokens": None,
@@ -97,14 +96,13 @@ def new_conversation():
     }
 
     return {
-        "status": "new conversation created",
+        "status": "conversation selected",
         "model": MODEL,
         "active_conversation_id": active_conversation_id,
         "conversations": list_conversations(),
         "messages_sent_to_model": conversation,
         "usage": last_usage,
     }
-
 
 @app.post("/chat")
 def chat(request: ChatRequest) -> Dict[str, Any]:
