@@ -7,6 +7,7 @@ const modelBox = document.getElementById("model");
 const usageBox = document.getElementById("usage");
 const contextBox = document.getElementById("context");
 const conversationListBox = document.getElementById("conversation-list");
+const ragContextElement = document.getElementById("rag-context");
 
 function renderMarkdown(text) {
     if (window.marked && window.marked.parse) {
@@ -71,6 +72,14 @@ function updateContext(data) {
     modelBox.textContent = data.model || "-";
     usageBox.textContent = JSON.stringify(data.usage, null, 2);
     contextBox.textContent = JSON.stringify(data.messages_sent_to_model, null, 2);
+    if (ragContextElement) {
+       if (data.rag_context && data.rag_context.trim() !== "") {
+           ragContextElement.textContent = data.rag_context;
+       } else {
+           ragContextElement.textContent = "No RAG context was used in the last model call.";
+       }
+    }
+
     renderConversationList(data.conversations || [], data.active_conversation_id);
 }
 
