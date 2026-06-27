@@ -17,6 +17,7 @@ from backend.database import (
     list_conversations,
     load_messages,
     save_message,
+    update_conversation_title,
 )
 
 
@@ -57,6 +58,21 @@ class ChatRequest(BaseModel):
     message: str
 
 
+def make_title_from_message(message: str) -> str:
+    """
+    Creates a short conversation title from the first user message.
+    """
+    title = message.strip().replace("\n", " ")
+
+    if len(title) > 40:
+        title = title[:40] + "..."
+
+    if not title:
+        return "New chat"
+
+    return title
+
+
 @app.get("/")
 def home():
     return FileResponse("frontend/index.html")
@@ -69,6 +85,35 @@ def state():
     The frontend uses this when the page loads.
     """
     return {
+        "model": MODEL,
+        "active_conversation_id": active_conversation_id,
+        "conversations": list_conversations(),
+        "messages_sent_to_model": conversation,
+        "usage": last_usage,
+    }
+
+
+@app.post("/conversations/new")
+def new_conversation():
+    """
+    Creates a new empty conversation.
+    Old conversations remain stored in SQLite.
+    """
+    global active_conversation_id
+    global conversation
+    global last_usage
+
+    active_conversation_id = create_conversation()
+    conversation = []
+
+    last_usage = {
+        "prompt_tokens": None,
+        "completion_tokens": None,
+        "total_tokens": None,
+    }
+
+    return {
+        "status": "new conversation created",
         "model": MODEL,
         "active_conversation_id": active_conversation_id,
         "conversations": list_conversations(),
@@ -104,19 +149,29 @@ def select_conversation(conversation_id: int):
         "usage": last_usage,
     }
 
+
 @app.post("/chat")
 def chat(request: ChatRequest) -> Dict[str, Any]:
     """
     Baseline non-streaming route.
     It is kept so the original version still exists.
     """
+    global last_usage
+
     user_message = request.message
+    is_first_message = len(conversation) == 0
 
     conversation.append({
         "role": "user",
         "content": user_message
     })
     save_message(active_conversation_id, "user", user_message)
+
+    if is_first_message:
+        update_conversation_title(
+            active_conversation_id,
+            make_title_from_message(user_message)
+        )
 
     response = client.chat.completions.create(
         model=MODEL,
@@ -134,7 +189,6 @@ def chat(request: ChatRequest) -> Dict[str, Any]:
 
     usage = response.usage
 
-    global last_usage
     last_usage = {
         "prompt_tokens": usage.prompt_tokens if usage else None,
         "completion_tokens": usage.completion_tokens if usage else None,
@@ -160,12 +214,19 @@ def chat_stream(request: ChatRequest):
     The frontend reads these chunks and updates the assistant message live.
     """
     user_message = request.message
+    is_first_message = len(conversation) == 0
 
     conversation.append({
         "role": "user",
         "content": user_message
     })
     save_message(active_conversation_id, "user", user_message)
+
+    if is_first_message:
+        update_conversation_title(
+            active_conversation_id,
+            make_title_from_message(user_message)
+        )
 
     def event_generator():
         assistant_parts: List[str] = []
