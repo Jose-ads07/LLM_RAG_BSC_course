@@ -1,0 +1,10 @@
+services:
+  easy-chatgpt:
+    build: .
+    container_name: easy-chatgpt
+    ports:
+      - "${PORT:-6661}:${PORT:-6661}"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
