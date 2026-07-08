@@ -1,15 +1,17 @@
-FROM python:3.13-slim
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-COPY backend/requirements.txt /app/backend/requirements.txt
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-RUN pip install --no-cache-dir -r /app/backend/requirements.txt
+COPY app ./app
+COPY static ./static
+COPY data ./data
 
-COPY backend /app/backend
-COPY frontend /app/frontend
-COPY rag_files /app/rag_files
+EXPOSE 8000
 
-EXPOSE 6661
-
-CMD sh -c "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-6661}"
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

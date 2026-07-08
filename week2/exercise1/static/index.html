@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EASY-ASSISTANT Static RAG</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Week 2 Exercise 1</p>
+          <h1>EASY-ASSISTANT</h1>
+        </div>
+        <select id="assistantSelect" aria-label="Saved assistants"></select>
+      </header>
+
+      <section class="workspace">
+        <aside class="setup-panel">
+          <div class="section-heading">
+            <p class="eyebrow">Assistant setup</p>
+            <h2>Save Assistant</h2>
+          </div>
+
+          <form id="assistantForm" class="stack">
+            <label>
+              <span>Assistant Name</span>
+              <input id="assistantName" name="name" placeholder="Study Assistant" required />
+            </label>
+
+            <label>
+              <span>System Prompt</span>
+              <textarea id="systemPrompt" name="system_prompt" rows="7" required></textarea>
+            </label>
+
+            <label>
+              <span>Prompt Template</span>
+              <textarea id="promptTemplate" name="prompt_template" rows="12" required></textarea>
+            </label>
+
+            <button type="submit">Save assistant</button>
+          </form>
+
+          <form id="uploadForm" class="upload-box">
+            <label>
+              <span>Context .txt</span>
+              <input id="contextFile" name="file" type="file" accept=".txt,text/plain" required />
+            </label>
+            <button type="submit">Upload Context</button>
+            <p id="contextStatus" class="status-line">No context uploaded.</p>
+          </form>
+        </aside>
+
+        <section class="chat-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Visible Chat</p>
+              <h2>Bare History</h2>
+            </div>
+            <button id="clearChat" type="button">Clear</button>
+          </div>
+
+          <div id="chatHistory" class="chat-history" aria-live="polite"></div>
+
+          <form id="chatForm" class="chat-form">
+            <input id="userInput" autocomplete="off" placeholder="Ask about the uploaded document" required />
+            <button type="submit">Send</button>
+          </form>
+        </section>
+
+        <section class="debug-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Backend View</p>
+              <h2>Static RAG Debug</h2>
+            </div>
+            <div class="debug-badges">
+              <div id="debugAssistantName" class="assistant-badge">No assistant</div>
+              <div id="tokenBadge" class="token-badge">prompt_tokens: 0</div>
+            </div>
+          </div>
+
+          <div class="tabs" role="tablist" aria-label="Debug views">
+            <button class="tab active" type="button" data-tab="context">Document</button>
+            <button class="tab" type="button" data-tab="prompt">Filled Prompt</button>
+            <button class="tab" type="button" data-tab="messages">Messages</button>
+            <button class="tab" type="button" data-tab="usage">Usage</button>
+          </div>
+
+          <pre id="debugContent" class="debug-content"></pre>
+        </section>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="/static/app.js" type="module"></script>
+  </body>
+</html>
