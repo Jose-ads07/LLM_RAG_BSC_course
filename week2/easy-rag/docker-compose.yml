@@ -1,0 +1,15 @@
+services:
+  easy-rag:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      OPENAI_ENDPOINT: ${OPENAI_ENDPOINT:-http://host.docker.internal:11434/v1}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-ollama}
+      EASY_RAG_MODEL: ${EASY_RAG_MODEL:-qwen3:1.7b}
+      EMBED_MODEL: ${EMBED_MODEL:-nomic-embed-text}
+      EASY_ASSISTANT_DEMO_MODE: ${EASY_ASSISTANT_DEMO_MODE:-}
+    volumes:
+      - ./data:/app/data
+      - ./collections-store:/app/collections-store
+      - ./static:/app/static

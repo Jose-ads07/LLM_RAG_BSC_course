@@ -1,0 +1,9 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+openai==1.59.7
+python-dotenv>=1.0.0
+markitdown==0.1.6
+-e ./vendor/collections-manager
+pytest==8.3.4
+httpx==0.28.1

@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+data/assistants.json
+collections-store/
+static/uploads/
+static/markdown/
+.env
+
+.env.*
+
+backups/
+
+artifacts/

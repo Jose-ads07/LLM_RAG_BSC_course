@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EASY-RAG</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main id="appShell" class="app-shell">
+      <header class="top-nav">
+        <div class="brand-lockup">
+          <div class="brand-mark" aria-hidden="true">ER</div>
+          <div>
+            <p class="eyebrow">EASY-RAG</p>
+            <h1>Grounded Retrieval Assistant</h1>
+          </div>
+        </div>
+
+        <div class="nav-center" aria-label="Active workspace">
+          <label class="assistant-switcher">
+            <span>Current Assistant</span>
+            <select id="assistantSelect" aria-label="Saved assistants"></select>
+          </label>
+
+          <div class="model-badge" aria-label="Current model">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span id="modelName">qwen3:1.7b</span>
+          </div>
+        </div>
+
+        <div class="nav-actions">
+          <button id="toggleSetup" class="ghost-button" type="button" aria-expanded="true" aria-controls="setupPanel">
+            Settings
+          </button>
+          <button id="toggleDebug" class="ghost-button" type="button" aria-expanded="true" aria-controls="debugPanel">
+            RAG internals
+          </button>
+        </div>
+      </header>
+
+      <section class="workspace-summary" aria-label="Assistant status">
+        <div class="summary-card primary-summary">
+          <span>Assistant</span>
+          <strong id="topAssistantName">No assistant</strong>
+        </div>
+        <div class="summary-card">
+          <span>Status</span>
+          <strong id="appStatus">Ready</strong>
+        </div>
+        <div class="summary-card">
+          <span>Documents</span>
+          <strong id="documentsMetric">0</strong>
+        </div>
+        <div class="summary-card">
+          <span>Chunks</span>
+          <strong id="chunksMetric">0</strong>
+        </div>
+      </section>
+
+      <section class="product-grid" aria-label="EASY-RAG workspace">
+        <aside id="setupPanel" class="control-panel">
+          <div class="panel-title">
+            <div>
+              <p class="eyebrow">Workspace</p>
+              <h2>Control Center</h2>
+            </div>
+          </div>
+
+          <form id="assistantForm" class="control-stack">
+            <details class="config-card" open>
+              <summary><span class="section-icon" aria-hidden="true">ID</span>Identity</summary>
+              <label>
+                <span>Assistant Name</span>
+                <small>Shown in the workspace switcher and chat header.</small>
+                <input id="assistantName" name="name" placeholder="Study Assistant" required />
+              </label>
+            </details>
+
+            <details class="config-card">
+              <summary><span class="section-icon" aria-hidden="true">{}</span>Grounding Prompts</summary>
+              <label>
+                <span>System Prompt</span>
+                <small>Rules the model follows before reading retrieved chunks.</small>
+                <textarea id="systemPrompt" name="system_prompt" rows="6" required></textarea>
+              </label>
+
+              <label>
+                <span>Prompt Template</span>
+                <small>Must keep both placeholders: {context} and {user_input}.</small>
+                <textarea id="promptTemplate" name="prompt_template" rows="8" required></textarea>
+              </label>
+            </details>
+
+            <details class="config-card" open>
+              <summary><span class="section-icon" aria-hidden="true">K</span>Retrieval</summary>
+              <div class="field-grid">
+                <label>
+                  <span>Top-K</span>
+                  <small>Maximum number of retrieved chunks.</small>
+                  <input id="retrievalTopK" name="retrieval_top_k" type="number" min="1" max="20" step="1" />
+                </label>
+
+                <label>
+                  <span>Threshold</span>
+                  <small>Minimum cosine similarity.</small>
+                  <input id="retrievalThreshold" name="retrieval_threshold" type="number" min="-1" max="1" step="0.01" />
+                </label>
+              </div>
+            </details>
+
+            <details class="config-card" open>
+              <summary><span class="section-icon" aria-hidden="true">#</span>Chunking</summary>
+              <div class="field-grid">
+                <label>
+                  <span>Strategy</span>
+                  <small>How uploaded markdown is split.</small>
+                  <select id="chunkStrategy" name="chunk_strategy">
+                    <option value="chars">Characters</option>
+                    <option value="sections">Sections</option>
+                  </select>
+                </label>
+
+                <label class="section-only">
+                  <span>Heading Level</span>
+                  <small>Markdown heading level to split at.</small>
+                  <input id="sectionLevel" name="section_level" type="number" min="1" max="6" step="1" />
+                </label>
+              </div>
+
+              <div class="field-grid chars-only">
+                <label>
+                  <span>Chunk Size</span>
+                  <small>Characters per chunk.</small>
+                  <input id="chunkSize" name="chunk_size" type="number" min="100" max="8000" step="50" />
+                </label>
+
+                <label>
+                  <span>Overlap</span>
+                  <small>Characters shared between chunks.</small>
+                  <input id="chunkOverlap" name="chunk_overlap" type="number" min="0" max="4000" step="10" />
+                </label>
+              </div>
+            </details>
+
+            <button class="primary-button" type="submit">Save assistant</button>
+          </form>
+
+          <form id="uploadForm" class="knowledge-panel">
+            <div class="panel-title compact">
+              <div>
+                <p class="eyebrow">Knowledge Base</p>
+                <h2>Documents</h2>
+              </div>
+              <p id="contextStatus" class="status-line">No documents uploaded.</p>
+            </div>
+
+            <label id="dropZone" class="drop-zone" for="contextFile">
+              <input id="contextFile" name="files" type="file" accept=".txt,.md,.markdown,.pdf,.docx,.pptx,.html,text/plain,application/pdf" multiple required />
+              <span class="drop-icon" aria-hidden="true">+</span>
+              <strong>Drop files to ingest</strong>
+              <small>PDF, DOCX, Markdown, TXT, PPTX or HTML.</small>
+            </label>
+
+            <div id="selectedFiles" class="selected-files" aria-live="polite"></div>
+            <div id="uploadProgress" class="upload-progress" aria-live="polite"></div>
+            <button class="primary-button" type="submit">Upload documents</button>
+            <div id="documentsList" class="documents-list" aria-live="polite"></div>
+          </form>
+        </aside>
+
+        <section class="chat-panel" aria-label="Visible chat">
+          <div class="chat-header">
+            <div>
+              <p class="eyebrow">Conversation</p>
+              <h2>Grounded Chat</h2>
+            </div>
+            <div class="chat-header-actions">
+              <span class="shortcut-pill">Enter to send</span>
+              <button id="clearChat" class="ghost-button" type="button">Clear</button>
+            </div>
+          </div>
+
+          <div id="chatHistory" class="chat-history" aria-live="polite"></div>
+
+          <form id="chatForm" class="composer">
+            <label class="sr-only" for="userInput">Ask about uploaded documents</label>
+            <input id="userInput" autocomplete="off" placeholder="Ask a grounded question..." required />
+            <button class="primary-button send-button" type="submit">Send</button>
+          </form>
+        </section>
+
+        <section id="debugPanel" class="inspector-panel" aria-label="Backend RAG debug">
+          <div class="inspector-header">
+            <div>
+              <p class="eyebrow">RAG Inspector</p>
+              <h2>Internals</h2>
+            </div>
+            <div class="debug-badges">
+              <div id="debugAssistantName" class="assistant-badge">No assistant</div>
+              <div id="tokenBadge" class="token-badge">prompt_tokens: 0</div>
+            </div>
+          </div>
+
+          <div class="token-dashboard" aria-label="Token usage">
+            <div class="token-card">
+              <span>Prompt Tokens</span>
+              <strong id="promptTokensMetric">0</strong>
+            </div>
+            <div class="token-card">
+              <span>Completion Tokens</span>
+              <strong id="completionTokensMetric">0</strong>
+            </div>
+            <div class="token-card">
+              <span>Retrieved Chunks</span>
+              <strong id="retrievedChunksMetric">0</strong>
+            </div>
+          </div>
+
+          <div class="tabs" role="tablist" aria-label="Debug views">
+            <button class="tab active" type="button" data-tab="documents">Documents</button>
+            <button class="tab" type="button" data-tab="retrieved">Retrieved</button>
+            <button class="tab" type="button" data-tab="prompt">Filled Prompt</button>
+            <button class="tab" type="button" data-tab="messages">Messages</button>
+            <button class="tab" type="button" data-tab="usage">Usage</button>
+          </div>
+
+          <div id="debugContent" class="debug-content"></div>
+        </section>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="/static/app.js" type="module"></script>
+  </body>
+</html>
