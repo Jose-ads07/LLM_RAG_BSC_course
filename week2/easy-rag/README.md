@@ -24,7 +24,7 @@ ollama pull nomic-embed-text
 .venv/bin/uvicorn app.main:app --reload
 ```
 
-Open http://localhost:8000.
+Open http://localhost:8001.
 
 The app defaults to the local OpenAI-compatible Ollama endpoint:
 
